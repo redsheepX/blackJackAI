@@ -60,7 +60,7 @@ class Player:
         return hand_value
 
     def display_hand(self, hide_second_card=False):
-        hand_str = ', '.join(str(card) for card in self.hand[:1] + [Card(0)] * hide_second_card + self.hand[1:])
+        hand_str = ', '.join(str(card) for card in self.hand[:1] + [self.hand[1]] * hide_second_card + self.hand[1:])
         print(f'{self.name}的手牌: {hand_str}')
 
     def get_handNumber(self):
@@ -132,13 +132,19 @@ def show_results(players: list[Player], dealer: Player):
         if player != dealer:
             player_value = player.get_hand_value()
             if player_value > 21:
-                print(f'{player.name}爆牌！')
+                print(f'{player.name}爆牌！，點數:{player_value}')
+                if player.name=="玩家":
+                    score=-10-30
             elif player_value > dealer_value or dealer_value > 21:
-                print(f'{player.name}贏了！')
+                print(f'{player.name}贏了！，點數:{player_value}')
+                score=player_value+30
             elif player_value == dealer_value:
-                print(f'{player.name}與莊家平手！')
+                print(f'{player.name}與莊家平手！，點數:{player_value}')
+                score=player_value
             else:
-                print(f'{player.name}輸了！')
+                print(f'{player.name}輸了！，點數:{player_value}')
+                score=player_value-30
+    return score
 
 # 主要遊戲邏輯
 def play_game():
