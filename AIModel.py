@@ -11,15 +11,13 @@ class BlackjackModule(nn.Module):
         self.input_layer = nn.Linear(input_size, hidden_size)
         self.hidden_layer = nn.Linear(hidden_size, hidden_size)
         self.output_layer = nn.Linear(hidden_size, output_size)
-        self.activation = nn.ReLU()
+
 
     def forward(self, x):
-        x_input=x
+        x_input=x.tolist()
         x = F.relu(self.input_layer(x))
         x = F.relu(self.hidden_layer(x))
         x = self.output_layer(x)
-        
-        
         if not self.canDouble(x_input):
             x[-2] = float('-inf')
         if not self.canSplit(x_input):
@@ -28,7 +26,7 @@ class BlackjackModule(nn.Module):
         return x
 
     def save(self,filename='BlackJack.pth'):
-        model_folder_path = './Model'
+        model_folder_path = 'model/'
         if not os.path.exists(model_folder_path):
             os.mkdir(model_folder_path)
             
@@ -36,15 +34,23 @@ class BlackjackModule(nn.Module):
         torch.save(self.state_dict(),filename)
         
     def canDouble(self,State:list):
+        if type(State[0])==list:
+            State=State[0]
+        else:
+            State=State
         cardLen=0
         canDouble=True
         for i in State[0:51]:
-            cardLen+=i
+            cardLen += i
         if cardLen>2:
             canDouble=False
         return canDouble
     
     def canSplit(self,State:list):
+        if type(State[0])==list:
+            State=State[0]
+        else:
+            State=State
         canSplit=True
         cardList=[]
         for i in State[54:105]:
@@ -55,9 +61,8 @@ class BlackjackModule(nn.Module):
             if State[0:51][i] >0:
                 for j in range(i):
                     cardList.append(i)
-                    
         #cardList數量>2 或 點數不相等
-        if len(cardList)>2 or self.singleCardPoint(cardList[0]) != self.singleCardPoint(cardList[0]):
+        if len(cardList)!=2 or (self.singleCardPoint(cardList[0]) != self.singleCardPoint(cardList[1])):
             canSplit=False
         return canSplit
             
@@ -81,12 +86,11 @@ class QTrainer:
         self.optimizer = optim.Adam(model.parameters(),lr=self.lr)
         self.criterion:nn.MSELoss = nn.MSELoss()
 
-    def train_step(self,state,action,reward,next_state,done):        
+    def train_step(self,state,action,reward,next_state,done): 
         state= torch.tensor(state,dtype=torch.float)
         next_state= torch.tensor(next_state,dtype=torch.float)
         action= torch.tensor(action,dtype=torch.float)
         reward= torch.tensor(reward,dtype=torch.float)
-        
         if len(state.shape) ==1:
             state = torch.unsqueeze(state,0)
             next_state = torch.unsqueeze(next_state,0)
@@ -104,11 +108,12 @@ class QTrainer:
             Q_new = reward[idx]
             if not done[idx]:
                 Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx]))
-            
-            target[idx][torch.argmax(action).item()] = Q_new
-        
+            target[idx][torch.argmax(action[idx]).item()] = Q_new
+                    
         self.optimizer.zero_grad()
-        loss:nn.MSELoss = self.criterion(target,pred)
+        loss = self.criterion(target,pred)
+        print(loss)
         loss.backward()
+        
         self.optimizer.step()
         
