@@ -147,17 +147,28 @@ def player_turn(player: Player, deck: Deck):
                     player.display_hand()
                     print(f'{player.name}爆牌！')
                     player.handDone=True
+                    agent.reward=-20
+                else:
+                    agent.reward= player.get_hand_value()
                     
             elif choice == str(1): #Stand
                 print(f"玩家選擇: Stand")
                 player.handDone=True
-                
+                agent.reward= player.get_hand_value()
             elif choice == str(2): #Double
                 print(f"玩家選擇: Double")
                 if not player.handDouble:
                     player.add_card(deck.deal_card())
                     player.handDouble=True
                     player.handDone=True
+                    if player.get_hand_value() > 21:
+                        player.display_hand()
+                        print(f'{player.name}爆牌！')
+                        player.handDone=True
+                        agent.reward=-20
+                else:
+                    print("無法Double")
+                    agent.reward=-500
                     
             elif choice == str(3): #Split
                 print(f"玩家選擇: Split")
@@ -166,16 +177,12 @@ def player_turn(player: Player, deck: Deck):
                     player.add_card(deck.deal_card())
                     player.add_card(deck.deal_card(),addSplitHand=True)
                     player.split_handDone=False
+                    agent.reward=100
                 else:
-                    print("無法分牌")
-                    break
+                    print("無法分牌1")
+                    agent.reward=-500
             else:
                 print('請輸入有效選項（0或1或2或3）！')
-                break
-            if player.get_hand_value()>21:
-                agent.reward= -10
-            else:
-                agent.reward= player.get_hand_value()
             
             agent.state_new1=agent.get_state(StateDict=toState(players))
             agent.train_short_memory(agent.state_old1,agent.final_move1,agent.reward,agent.state_new1,0)
@@ -192,26 +199,31 @@ def player_turn(player: Player, deck: Deck):
                     player.display_split_hand()
                     print(f'{player.name}爆牌！')
                     player.split_handDone=True
-                    break
+                    agent.reward=-20
+                else:
+                    agent.reward= player.get_split_hand_value()
             elif choice == 1: #Stand
                 player.split_handDone=True
-                break
+                agent.reward= player.get_split_hand_value()
             elif choice == 2: #Double
                 if not player.split_handDouble:
                     player.add_card(deck.deal_card(),addSplitHand=True)
                     player.split_handDouble=True
-                    break
+                    if player.get_split_hand_value() > 21:
+                        player.display_split_hand()
+                        print(f'{player.name}爆牌！')
+                        player.split_handDone=True
+                        agent.reward=-20
+                    else:
+                        agent.reward= player.get_split_hand_value()
             elif choice==3:
-                print("無法分牌")
-                break
+                print("無法分牌2")
+                agent.reward=-500
             else:
                 print(choice)
                 print('請輸入有效選項（0或1或2或3）！')
                 exit()
-            if player.get_split_hand_value()>21:
-                agent.reward= -10
-            else:
-                agent.reward= player.get_split_hand_value()
+
             
             agent.state_new2=agent.get_state(StateDict=toState(players,splitHand=True))
             agent.train_short_memory(agent.state_old2,agent.final_move2,agent.reward,agent.state_new2,0)   

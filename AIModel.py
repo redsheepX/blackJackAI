@@ -14,14 +14,14 @@ class BlackjackModule(nn.Module):
 
 
     def forward(self, x):
-        x_input=x.tolist()
+        # x_input=x.tolist()
         x = F.relu(self.input_layer(x))
         x = F.relu(self.hidden_layer(x))
         x = self.output_layer(x)
-        if not self.canDouble(x_input):
-            x[-2] = float('-inf')
-        if not self.canSplit(x_input):
-            x[-1] = float('-inf')
+        # if not self.canDouble(x_input):
+        #     x[-2] = float('-inf')
+        # if not self.canSplit(x_input):
+        #     x[-1] = float('-inf')
 
         return x
 
