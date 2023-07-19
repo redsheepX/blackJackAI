@@ -13,7 +13,6 @@ num_games = 1
 plt_score = []
 plt_average_score=[]
 total_score=0
-flag = False
 
 
 # 定義卡片類別
@@ -134,7 +133,7 @@ def deal_initial_cards(players: list[Player], deck: Deck):
 # 玩家輪流進行選擇
 def player_turn(player: Player, deck: Deck):
    
-    global players,agent, flag
+    global players,agent
     if player.name == '玩家':
         while not player.handDone:
             player.display_hand()
@@ -216,8 +215,7 @@ def player_turn(player: Player, deck: Deck):
             
             agent.state_new2=agent.get_state(StateDict=toState(players,splitHand=True))
             agent.train_short_memory(agent.state_old2,agent.final_move2,agent.reward,agent.state_new2,0)   
-            agent.remember(agent.state_old2,agent.final_move2,agent.reward,agent.state_new2,0)   
-            flag=True
+            agent.remember(agent.state_old2,agent.final_move2,agent.reward,agent.state_new2,0)
     else:
         player.display_hand()
         
@@ -319,13 +317,11 @@ def show_results(part_players: list[Player], dealer: Player):
     plt_average_score.append(sum(plt_score)/num_games)
     
     agent.state_new1=agent.get_state(toState(players))
-    print('3')
     agent.train_short_memory(agent.state_old1,agent.final_move1,totalScore,agent.state_new1,1)
     agent.remember(agent.state_old1,agent.final_move1,totalScore,agent.state_new1,1)
     
     if len(player.splitHand)>0:
         agent.state_new2=agent.get_state(toState(players,True))
-        print('4')
         agent.train_short_memory(agent.state_old2,agent.final_move2,totalScore,agent.state_new2,1)
         agent.remember(agent.state_old2,agent.final_move2,totalScore,agent.state_new2,1)
     if totalScore >0:
@@ -388,10 +384,10 @@ def toState(players:list[Player],splitHand=False):
 
 # 主要遊戲邏輯
 def play_game():
-    global num_games,agent,total_score, flag
+    global num_games,agent,total_score
     while True:
         print('-----start-----')
-        flag=False
+        
         num_computers = random.randint(0, 4)
         players, deck = initialize_game(num_computers)
         deal_initial_cards(players, deck)
@@ -409,6 +405,7 @@ def play_game():
         if num_games%100 ==0:
             input("123")
         num_games += 1
+        
         print('-----finish-----')
         
 
