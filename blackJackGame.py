@@ -13,7 +13,7 @@ num_games = 1
 plt_score = []
 plt_average_score=[]
 total_score=0
-
+flag = False
 
 
 # 定義卡片類別
@@ -133,30 +133,35 @@ def deal_initial_cards(players: list[Player], deck: Deck):
 
 # 玩家輪流進行選擇
 def player_turn(player: Player, deck: Deck):
-    global players,agent
+   
+    global players,agent, flag
     if player.name == '玩家':
         while not player.handDone:
             player.display_hand()
             agent.state_old1  = agent.get_state(StateDict=toState(players))
             agent.final_move1 = agent.get_action(agent.state_old1,num_games)
             choice = str(agent.final_move1)
-            print(f"電腦選擇:{choice}")
             if choice == str(0): #Hit
+                print(f"玩家選擇: Hit")
                 player.add_card(deck.deal_card())
                 if player.get_hand_value() > 21:
                     player.display_hand()
                     print(f'{player.name}爆牌！')
                     player.handDone=True
-                    break
+                    
             elif choice == str(1): #Stand
+                print(f"玩家選擇: Stand")
                 player.handDone=True
-                break
+                
             elif choice == str(2): #Double
+                print(f"玩家選擇: Double")
                 if not player.handDouble:
                     player.add_card(deck.deal_card())
                     player.handDouble=True
-                    break
+                    player.handDone=True
+                    
             elif choice == str(3): #Split
+                print(f"玩家選擇: Split")
                 if (values[player.hand[0].rank] == values[player.hand[1].rank]) and (len(player.hand)==2):
                     player.splitHand.append(player.hand.pop())
                     player.add_card(deck.deal_card())
@@ -164,44 +169,55 @@ def player_turn(player: Player, deck: Deck):
                     player.split_handDone=False
                 else:
                     print("無法分牌")
+                    break
             else:
                 print('請輸入有效選項（0或1或2或3）！')
+                break
             if player.get_hand_value()>21:
                 agent.reward= -10
             else:
                 agent.reward= player.get_hand_value()
+            
             agent.state_new1=agent.get_state(StateDict=toState(players))
             agent.train_short_memory(agent.state_old1,agent.final_move1,agent.reward,agent.state_new1,0)
             agent.remember(agent.state_old1,agent.final_move1,agent.reward,agent.state_new1,0)   
+                
         while not player.split_handDone:
             player.display_split_hand()
             agent.state_old2  = agent.get_state(StateDict=toState(players,splitHand=True))
             agent.final_move2 = agent.get_action(agent.state_old2,num_games)
-            choice = agent.final_move
-            if choice == str(0): #Hit
+            choice = agent.final_move2
+            if choice == 0: #Hit
                 player.add_card(deck.deal_card(),addSplitHand=True)
                 if player.get_split_hand_value() > 21:
                     player.display_split_hand()
                     print(f'{player.name}爆牌！')
                     player.split_handDone=True
                     break
-            elif choice == str(1): #Stand
+            elif choice == 1: #Stand
                 player.split_handDone=True
                 break
-            elif choice == str(2): #Double
+            elif choice == 2: #Double
                 if not player.split_handDouble:
                     player.add_card(deck.deal_card(),addSplitHand=True)
                     player.split_handDouble=True
                     break
+            elif choice==3:
+                print("無法分牌")
+                break
             else:
+                print(choice)
                 print('請輸入有效選項（0或1或2或3）！')
+                exit()
             if player.get_split_hand_value()>21:
                 agent.reward= -10
             else:
                 agent.reward= player.get_split_hand_value()
+            
             agent.state_new2=agent.get_state(StateDict=toState(players,splitHand=True))
             agent.train_short_memory(agent.state_old2,agent.final_move2,agent.reward,agent.state_new2,0)   
             agent.remember(agent.state_old2,agent.final_move2,agent.reward,agent.state_new2,0)   
+            flag=True
     else:
         player.display_hand()
         
@@ -248,7 +264,7 @@ def show_results(part_players: list[Player], dealer: Player):
             elif len(player.hand)>=5 and dealer_len>=5 and dealer_value < 21:
                 print(f'{player.name}五小龍！，點數:{player_value}')
                 if player.name=="玩家":
-                    score += 30 
+                    score += 30
             elif player_value > dealer_value or dealer_value > 21:
                 print(f'{player.name}贏了！，點數:{player_value}')
                 if player.name=="玩家":
@@ -281,7 +297,7 @@ def show_results(part_players: list[Player], dealer: Player):
                 elif len(player.splitHand)>=5 and dealer_len>=5 and dealer_value < 21:
                     print(f'{player.name}五小龍！，點數:{player_value}')
                     if player.name=="玩家":
-                        score2 += 30 
+                        score2 += 30
                 elif player_value > dealer_value or dealer_value > 21:
                     print(f'{player.name}贏了！，點數:{player_value}')
                     if player.name=="玩家":
@@ -301,12 +317,15 @@ def show_results(part_players: list[Player], dealer: Player):
     plt_score.append(totalScore)
     total_score += totalScore
     plt_average_score.append(sum(plt_score)/num_games)
+    
     agent.state_new1=agent.get_state(toState(players))
+    print('3')
     agent.train_short_memory(agent.state_old1,agent.final_move1,totalScore,agent.state_new1,1)
     agent.remember(agent.state_old1,agent.final_move1,totalScore,agent.state_new1,1)
     
     if len(player.splitHand)>0:
         agent.state_new2=agent.get_state(toState(players,True))
+        print('4')
         agent.train_short_memory(agent.state_old2,agent.final_move2,totalScore,agent.state_new2,1)
         agent.remember(agent.state_old2,agent.final_move2,totalScore,agent.state_new2,1)
     if totalScore >0:
@@ -369,8 +388,10 @@ def toState(players:list[Player],splitHand=False):
 
 # 主要遊戲邏輯
 def play_game():
-    global num_games,agent,total_score
+    global num_games,agent,total_score, flag
     while True:
+        print('-----start-----')
+        flag=False
         num_computers = random.randint(0, 4)
         players, deck = initialize_game(num_computers)
         deal_initial_cards(players, deck)
@@ -382,11 +403,13 @@ def play_game():
         dealer_turn(players[0], deck)
         show_results(players[1:], players[0])
         agent.train_long_memory()
+        
         print(f"你你已經進行{num_games}場遊戲")
         print(f"累積輸贏:{total_score}")
         if num_games%100 ==0:
             input("123")
         num_games += 1
+        print('-----finish-----')
         
 
 # 遊戲開始
